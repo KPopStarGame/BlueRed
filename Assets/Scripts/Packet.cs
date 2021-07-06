@@ -26,7 +26,7 @@ public class BlueredGameUserInfoPacket : RecvPacket
 
 public class BlueredBattingSettingPacket : RecvPacket
 { 
-    //방정보
+    //방정보(최초 진입)
     [System.Serializable]
     public struct RsltSet
     {
@@ -40,8 +40,9 @@ public class BlueredBattingSettingPacket : RecvPacket
     public RsltSet rslt_set;
 }
 
-public class BlueredRoomInfoCheckPacket : RecvPacket
-{ //유저 재화 보유 체크
+public class RecvBlueredRoomInfoCheckPacket : RecvPacket
+{ 
+    //방 정보 확인(실시간)
     [System.Serializable]
     public struct RsltSet
     {
@@ -71,14 +72,29 @@ public class BlueredRoomInfoCheckPacket : RecvPacket
 public class RecvUserStarCheckPacket : RecvPacket
 { //유저 재화 보유 체크
     [System.Serializable]
-    public struct UserData
+    public struct RsltSet
     {
         public string rtv; //결과 SUCC : 성공, FALSE : 실패
         public string msg; //메시지
         public string store_url; //상점 URL 실패시 사용
     }
-    public UserData rslt_set;
+    public RsltSet rslt_set;
 }
+
+public class RecvBlueredJoinProcPacket : RecvPacket
+{
+    [System.Serializable]
+    public struct RsltSet
+    {
+        public string rtv; //결과 SUCC : 성공, FALSE : 실패
+        public int game_no;
+        public string token;
+    }
+    public RsltSet rslt_set;
+}
+
+
+
 
 public class RecvUserBetSettingPacket : RecvPacket
 { //베팅값 셋팅

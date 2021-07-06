@@ -124,7 +124,7 @@ public class BRStateReady : BRState
 
     public override void OnCallBack(string jsonData, BlueRed br)
     {
-        var data = JsonUtility.FromJson<BlueredRoomInfoCheckPacket>(jsonData);
+        var data = JsonUtility.FromJson<RecvBlueredRoomInfoCheckPacket>(jsonData);
         nRoomNumber = data.rslt_set.bluered_room_info.game_no;
         DateTime szEndDateTime = Convert.ToDateTime(data.rslt_set.bluered_room_info.batting_end_dt);
         DateTime szNowDateTime = DateTime.Now;
