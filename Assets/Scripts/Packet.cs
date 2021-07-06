@@ -11,16 +11,61 @@ public class RecvPacket
     public string rslt_msg; //응답메시지
 }
 
-public class RecvUserInfoPacket : RecvPacket
-{ //유저 정보
+public class BlueredGameUserInfoPacket : RecvPacket
+{
+    //유저정보
     [System.Serializable]
-    public struct UserData
+    public struct RsltSet
     {
-        public string profile; //이미지 url
-        public string nick; //닉네임 (최대 20byte)
-        public int user_star_su; //유저 보유 스타수
+        public string profile;
+        public string nick;
+        public int user_star_su;
     }
-    public UserData rslt_set;
+    public RsltSet rslt_set;
+}
+
+public class BlueredBattingSettingPacket : RecvPacket
+{ 
+    //방정보
+    [System.Serializable]
+    public struct RsltSet
+    {
+        public string rtv;
+        public List<int> batting_sort;
+        public int win_dividend;
+        public int lose_dividend;
+        public int draw_dividend;
+        public int batting_possible_count;
+    }
+    public RsltSet rslt_set;
+}
+
+public class BlueredRoomInfoCheckPacket : RecvPacket
+{ //유저 재화 보유 체크
+    [System.Serializable]
+    public struct RsltSet
+    {
+        public string rtv; //결과 SUCC : 성공, FALSE : 실패
+        public BlueredRoomInfo bluered_room_info;
+    }
+    [System.Serializable]
+    public struct BlueredRoomInfo
+    {
+        public int game_no;
+        public string room_start_dt;
+        public string room_end_dt;
+        public string batting_start_dt;
+        public string batting_end_dt;
+        public int win_join_su;
+        public int draw_join_su;
+        public int lose_join_su;
+        public int win_batting_cnt;
+        public int draw_batting_cnt;
+        public int lose_batting_cnt;
+        public string play_result;
+        public string reg_date;
+    }
+    public RsltSet rslt_set;
 }
 
 public class RecvUserStarCheckPacket : RecvPacket

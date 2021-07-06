@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Networking;
+using System;
 
 public class BlueRed : MonoBehaviour
 {
@@ -55,12 +57,13 @@ public class BlueRed : MonoBehaviour
 
     [Header("기본 화면")]
     //blue, green, red 순서
-    public RectTransform[] betAreas = new RectTransform[3]; 
+    public RectTransform[] betAreas = new RectTransform[3];
     public Image[] betAreaImages = new Image[3];
     public Sprite[] betAreaNormalImageSources = new Sprite[3];
     public Sprite[] betAreaWinImageSources = new Sprite[3];
     public Text[] totalBetTexts = new Text[3];
     public Text[] myBetTexts = new Text[3];
+    public Text[] dividenRateTexts = new Text[3];
 
     public Sprite[] coinSpriteSrc = new Sprite[4]; //베팅 금액에 따른 코인 이미지(실버, 골드, 그린, 퍼플)
     public RectTransform myBetFrom; //내 베팅시 동전 이동의 시작 위치
@@ -71,6 +74,12 @@ public class BlueRed : MonoBehaviour
 
     public Toggle[] betToggles = new Toggle[4]; //베팅 토글
     public Text[] betToggleNums = new Text[4];
+
+    [Header("유저 정보")]
+    public RawImage userProfile;
+    public Text userNickName;
+    public Text remainCoinText;
+    private int remainCoin;
 
 
     [Header("결과 연출용 이미지")]
@@ -147,7 +156,7 @@ public class BlueRed : MonoBehaviour
     public void InitControls()
     {
         //Trend의 결과 마크 1차원=>2차원 배열 캐슁
-        for(int i = 0; i < trendMarks.Length; i++)
+        for (int i = 0; i < trendMarks.Length; i++)
         {
             trendMarks[i].sprite = null;
             trendMarks[i].enabled = false;
@@ -175,13 +184,12 @@ public class BlueRed : MonoBehaviour
 
     public void ResetGame()
     {
-        for(int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
             SetBetNumsText((SideType)i, 0);
             SetMyBetNumsText((SideType)i, 0);
         }
 
-        time = _betTime;
         _betCount = 0;
     }
 
@@ -208,6 +216,7 @@ public class BlueRed : MonoBehaviour
     }
     #endregion
 
+    private int prevTime;
     public bool UpdateTimer()
     {
         if (_time <= 0)
@@ -215,13 +224,11 @@ public class BlueRed : MonoBehaviour
 
         bool done = false;
 
-        int prev = (int)_time;
-        _time -= Time.deltaTime;
-
-        if(prev > (int)_time)
+        if (prevTime > (int)_time)
         {
             PlayAudio(1, acCount);
         }
+        prevTime = (int)_time;
 
         if (done = _time <= 0)
         {
@@ -253,26 +260,31 @@ public class BlueRed : MonoBehaviour
         int index = (int)type;
         myBetTexts[index].text = string.Format("{0:#,0}", bet);
     }
-
+    
+    public void SetDividenRateText(SideType type, int rate)
+    {
+        int index = (int)type;
+        dividenRateTexts[index].text = string.Format("{0}", rate);
+    }
 
 
     public void OnClickBetBlueArea()
     {
-        if (!IsInState(stateBetting))
+        if (!IsInState(stateReady))
             return;
         BetCoin(SideType.Blue, true, _betIndex);
     }
 
     public void OnClickBetGreenArea()
     {
-        if (!IsInState(stateBetting))
+        if (!IsInState(stateReady))
             return;
         BetCoin(SideType.Green, true, _betIndex);
     }
 
     public void OnClickBetRedArea()
     {
-        if (!IsInState(stateBetting))
+        if (!IsInState(stateReady))
             return;
         BetCoin(SideType.Red, true, _betIndex);
     }
@@ -280,13 +292,13 @@ public class BlueRed : MonoBehaviour
 
     public void BetCoin(SideType type, bool myBet, int betIndex)
     {
-        if(myBet)
+        if (myBet)
         {
-            if(_betCount == 0)
+            if (_betCount == 0)
             {
                 _betSide = type;
             }
-            else if(_betSide != type || _betCount >= _betLimit)
+            else if (_betSide != type || _betCount >= _betLimit)
             {
                 return; //실패처리
             }
@@ -309,8 +321,8 @@ public class BlueRed : MonoBehaviour
 
         RectTransform t = betAreas[index];
         Vector2 halfSize = new Vector2((t.rect.width - coinRectTransform.rect.width) / 2f, (t.rect.height - coinRectTransform.rect.height) / 2f);
-        float x = Random.Range(t.localPosition.x - halfSize.x, t.localPosition.x + halfSize.x);
-        float y = Random.Range(t.localPosition.y - halfSize.y, t.localPosition.y + halfSize.y);
+        float x = UnityEngine.Random.Range(t.localPosition.x - halfSize.x, t.localPosition.x + halfSize.x);
+        float y = UnityEngine.Random.Range(t.localPosition.y - halfSize.y, t.localPosition.y + halfSize.y);
         Vector2 to = new Vector2(x, y);
 
         coin.from = myBet ? myBetFrom.localPosition : playersBetFrom.localPosition;
@@ -329,7 +341,7 @@ public class BlueRed : MonoBehaviour
     public void RestoreCoins()
     {
         BetCoin[] activeCoins = betCoinPool.activeObjects.ToArray();
-        for(int i = 0; i < activeCoins.Length; i++)
+        for (int i = 0; i < activeCoins.Length; i++)
         {
             activeCoins[i].hideReach = true;
             activeCoins[i].from = activeCoins[i].to;
@@ -470,6 +482,144 @@ public class BlueRed : MonoBehaviour
 
     }
 
+    public Dictionary<eState, Action<string, BlueRed>> m_mapAction = new Dictionary<eState, Action<string, BlueRed>>();
+    public Dictionary<eState, Coroutine> m_mapCorutine = new Dictionary<eState, Coroutine>();
+    public Action<string, BlueRed> actionForWebRequest;
+
+    public void StartCorWebRequest(eState state, string szPostAddress, List<FormData> listFormData, Action<string, BlueRed> action, bool bLoop = false)
+    {
+        Action<string, BlueRed> useAction = null;
+        if (m_mapAction.ContainsKey(state) == true)
+        {
+            useAction = m_mapAction[state];
+        }
+        else
+        {
+            useAction = action;
+            m_mapAction.Add(state, useAction);
+        }
+
+        Coroutine nCoroutine = null;
+        if (bLoop == false)
+        {
+            nCoroutine = StartCoroutine(IWebRequest(szPostAddress, listFormData, action));
+        }
+        else
+        {
+            nCoroutine = StartCoroutine(IWebRequestLoop(szPostAddress, listFormData, action, bLoop));
+        }
+        if (m_mapCorutine.ContainsKey(state) == true)
+        {
+            Coroutine prevCoroutine = m_mapCorutine[state];
+            if (prevCoroutine != null)
+            {
+                StopCoroutine(prevCoroutine);
+                prevCoroutine = null;
+            }
+            m_mapCorutine[state] = nCoroutine;
+        }
+        else
+        {
+            m_mapCorutine.Add(state, nCoroutine);
+        }
+
+
+    }
+
+    public void StopCoroutine(eState state)
+    {
+        if (m_mapCorutine.ContainsKey(state))
+        {
+            Coroutine nCoroutine = m_mapCorutine[state];
+            if (nCoroutine != null)
+            {
+                StopCoroutine(nCoroutine);
+                nCoroutine = null;
+            }
+        }
+    }
+
+    public IEnumerator IWebRequest(string szPostAddress, List<FormData> listFormData, Action<string, BlueRed> action)
+    {
+        UnityWebRequest p_webRequest = new UnityWebRequest();
+        WWWForm p_form = new WWWForm();
+
+        lock (listFormData)
+        {
+            for (int i = 0; i < listFormData.Count; i++)
+            {
+                FormData p_FormData = listFormData[i];
+                p_form.AddField(p_FormData.szKey, p_FormData.szValue);
+            }
+        }
+
+        using (p_webRequest = UnityWebRequest.Post(szPostAddress, p_form))
+        {
+            yield return p_webRequest.SendWebRequest();
+
+            if (p_webRequest.isNetworkError)
+            {
+                Debug.Log(p_webRequest.error);
+            }
+            else
+            {
+                Debug.Log("#004_001 : " + p_webRequest.downloadHandler.text);
+                action?.Invoke(p_webRequest.downloadHandler.text, this);
+            }
+        }
+    }
+
+    public IEnumerator IWebRequestLoop(string szPostAddress, List<FormData> listFormData, Action<string, BlueRed> action, bool bLoop, float fWaitTime = 0.5f)
+    {
+        UnityWebRequest p_webRequest = new UnityWebRequest();
+        WWWForm p_form = new WWWForm();
+
+        lock (listFormData)
+        {
+            for (int i = 0; i < listFormData.Count; i++)
+            {
+                FormData p_FormData = listFormData[i];
+                p_form.AddField(p_FormData.szKey, p_FormData.szValue);
+            }
+        }
+        while (bLoop)
+        {
+            using (p_webRequest = UnityWebRequest.Post(szPostAddress, p_form))
+            {
+                yield return p_webRequest.SendWebRequest();
+
+                if (p_webRequest.isNetworkError)
+                {
+                    Debug.Log(p_webRequest.error);
+                }
+                else
+                {
+                    Debug.Log("#004_001 : " + p_webRequest.downloadHandler.text);
+                    action?.Invoke(p_webRequest.downloadHandler.text, this);
+                }
+            }
+            yield return new WaitForSeconds(fWaitTime);
+        }
+    }
+
+    IEnumerator DownloadImage(string MediaUrl)
+    {
+        UnityWebRequest request = UnityWebRequestTexture.GetTexture(MediaUrl);
+        yield return request.SendWebRequest();
+        if (request.isNetworkError || request.isHttpError)
+            Debug.Log(request.error);
+        else
+            userProfile.texture = ((DownloadHandlerTexture)request.downloadHandler).texture;
+    }
+
+    public void SetUserInfo(string _imageUrl, string _nickName, int _remainCoin)
+    {
+        StartCoroutine(DownloadImage(string.Format("{0}{1}", "https://kpoplive.m.codewiz.kr", _imageUrl)));
+        this.userNickName.text = _nickName;
+        this.remainCoin = _remainCoin;
+        this.remainCoinText.text = this.remainCoin.ToString();
+    }
+
 
     //아래는 참고용 예시 코드
     /* 
@@ -588,4 +738,11 @@ public class BlueRed : MonoBehaviour
     }
 
      */
+}
+
+
+public class FormData
+{
+    public string szKey;
+    public string szValue;
 }
