@@ -143,6 +143,10 @@ public class BlueRed : MonoBehaviour
         set
         {
             _time = value;
+            if(_time < 0)
+            {
+                _time = 0;
+            }
             timerText.text = ((int)_time).ToString();
         }
     }
@@ -253,6 +257,7 @@ public class BlueRed : MonoBehaviour
         int index = (int)type;
         _betNums[index] += bet;
         totalBetTexts[index].text = string.Format("{0:#,0}", _betNums[index]);
+        ReduceRemainCoin(bet);
     }
 
     public void SetMyBetNumsText(SideType type, int bet)
@@ -272,36 +277,56 @@ public class BlueRed : MonoBehaviour
     {
         if (!IsInState(stateReady))
             return;
-        BetCoin(SideType.Blue, true, _betIndex);
+        if (CheckBetCoin(SideType.Blue) == false)
+        {
+            return;
+        }
+        StartCheckBetCoin();
+        //BetCoin(SideType.Blue, true, _betIndex);
     }
 
     public void OnClickBetGreenArea()
     {
         if (!IsInState(stateReady))
             return;
-        BetCoin(SideType.Green, true, _betIndex);
+        if (CheckBetCoin(SideType.Green) == false)
+        {
+            return;
+        }
+        StartCheckBetCoin();
+        //BetCoin(SideType.Green, true, _betIndex);
     }
 
     public void OnClickBetRedArea()
     {
         if (!IsInState(stateReady))
             return;
-        BetCoin(SideType.Red, true, _betIndex);
+        if(CheckBetCoin(SideType.Red) == false)
+        {
+            return;
+        }
+        StartCheckBetCoin();
+        //BetCoin(SideType.Red, true, _betIndex);
     }
 
+
+    public bool CheckBetCoin(SideType type)
+    {
+        if (_betCount == 0)
+        {
+            _betSide = type;
+        }
+        else if (_betSide != type || _betCount >= _betLimit)
+        {
+            return false; //실패처리
+        }
+        return true;
+    }
 
     public void BetCoin(SideType type, bool myBet, int betIndex)
     {
         if (myBet)
         {
-            if (_betCount == 0)
-            {
-                _betSide = type;
-            }
-            else if (_betSide != type || _betCount >= _betLimit)
-            {
-                return; //실패처리
-            }
             _betCount++;
 
             _currentBet.sum += _betTable[betIndex];
@@ -614,20 +639,104 @@ public class BlueRed : MonoBehaviour
 
     public void SetUserInfo(string _imageUrl, string _nickName, int _remainCoin)
     {
-        StartCoroutine(DownloadImage(string.Format("{0}{1}", "https://kpoplive.m.codewiz.kr", _imageUrl)));
-        this.userNickName.text = _nickName;
-        this.remainCoin = _remainCoin;
+        if(_imageUrl != null)
+        {
+            StartCoroutine(DownloadImage(string.Format("{0}{1}", "https://kpoplive.m.codewiz.kr", _imageUrl)));
+        }
+        if(_nickName != null)
+        {
+            this.userNickName.text = _nickName;
+        }
+        if(_remainCoin >= 0 && _remainCoin != remainCoin)
+        {
+            this.remainCoin = _remainCoin;
+            this.remainCoinText.text = this.remainCoin.ToString();
+        }
+    }
+
+    public void ReduceRemainCoin(int _reduceValue)
+    {
+        this.remainCoin -= _reduceValue;
         this.remainCoinText.text = this.remainCoin.ToString();
     }
 
+    public void StartCheckBetCoin()
+    {
+        m_listFormData.Clear();
+        FormData formData_Token = CreateFormData("token", _userToken);
+        m_listFormData.Add(formData_Token);
 
-    //아래는 참고용 예시 코드
-    /* 
-    private static string _userToken = "dyt2Sys5Q3JIdnRMVWlRa0dFaEtyZz09OjprMmlTbVBlNTA4dVVmSjlI"; //테스트 토큰
-    
-    public Text tokenText;
+        int betValue = _betTable[_betIndex];
+        FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
+        m_listFormData.Add(formData_BetValue);
+
+        StartCorWebRequest(eState.Betting, "https://kpoplive.m.codewiz.kr/game/game_user_star_check", m_listFormData, OnCallBack_CheckStar);
+    }
+
+    public void StartSetBetCoin()
+    {
+        m_listFormData.Clear();
+        BRStateReady p_stateReady = stateReady as BRStateReady;
+        int nRoomNumber = p_stateReady.RoomNumber;
+        FormData formData_GameNum = CreateFormData("game_no", nRoomNumber.ToString());
+        m_listFormData.Add(formData_GameNum);
+
+        FormData formData_Token = CreateFormData("token", _userToken);
+        m_listFormData.Add(formData_Token);
+
+        int betValue = _betTable[_betIndex];
+        FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
+        m_listFormData.Add(formData_BetValue);
+
+        string selectValue = null;
+        switch(_betSide)
+        {
+            case SideType.Blue:
+                selectValue = "WIN";
+                break;
+            case SideType.Green:
+                selectValue = "DRAW";
+                break;
+            case SideType.Red:
+                selectValue = "LOSE";
+                break;
+        }
+        FormData formData_SelectValue = CreateFormData("select_value", selectValue);
+        m_listFormData.Add(formData_SelectValue);
+
+        StartCorWebRequest(eState.Betting, "https://kpoplive.m.codewiz.kr/game/bluered_join_proc", m_listFormData, OnCallBack_JoinProc);
+    }
+
+    public void OnCallBack_CheckStar(string jsonData, BlueRed br)
+    {
+        var data = JsonUtility.FromJson<RecvUserStarCheckPacket>(jsonData);
+        var rslt_Set = data.rslt_set;
+        switch(rslt_Set.rtv)
+        {
+            case "SUCC":
+                StartSetBetCoin();
+                break;
+            case "FALSE":
+                break;
+        }
+    }
+
+    public void OnCallBack_JoinProc(string jsonData, BlueRed br)
+    {
+        var data = JsonUtility.FromJson<RecvBlueredJoinProcPacket>(jsonData);
+        var rslt_Set = data.rslt_set;
+        switch(rslt_Set.rtv)
+        {
+            case "SUCC":
+                BetCoin(_betSide, true, _betIndex);
+                break;
+        }
+    }
 
     //유저 토큰
+    private List<FormData> m_listFormData = new List<FormData>();
+    private static string _userToken = "dyt2Sys5Q3JIdnRMVWlRa0dFaEtyZz09OjprMmlTbVBlNTA4dVVmSjlI"; //테스트 토큰
+    public static string UserToken { get { return _userToken; } }
     public void GetUserToken()
     {
         string source = Application.absoluteURL;
@@ -635,7 +744,6 @@ public class BlueRed : MonoBehaviour
         int beginIndex = source.IndexOf('?');
         if (beginIndex == -1) //error: bad format
         {
-            tokenText.text = "GetUserToken error: " + source;
             return;
         }
 
@@ -643,16 +751,23 @@ public class BlueRed : MonoBehaviour
         string[] kvPair = param.Split('=');
         if (kvPair.Length == 2 && kvPair[0] == "token")
         { //success
-            tokenText.text = kvPair[1];
             _userToken = kvPair[1];
         }
         else
         { //error: bad format
-            tokenText.text = "params are missing.";
             return;
         }
     }
-    
+
+    public static FormData CreateFormData(string key, string value)
+    {
+        FormData userInfoTockenForm = new FormData();
+        userInfoTockenForm.szKey = key;
+        userInfoTockenForm.szValue = value;
+        return userInfoTockenForm;
+    }
+    //아래는 참고용 예시 코드
+    /* 
     
 
     //유저 정보를 요청

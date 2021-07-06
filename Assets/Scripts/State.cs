@@ -24,6 +24,13 @@ public abstract class BRState
     public abstract void Update(BlueRed br);
     public abstract void Leave(BlueRed br);
     public abstract void OnCallBack(string jsonData, BlueRed br);
+    public FormData CreateFormData(string key, string value)
+    {
+        FormData userInfoTockenForm = new FormData();
+        userInfoTockenForm.szKey = key;
+        userInfoTockenForm.szValue = value;
+        return userInfoTockenForm;
+    }
 }
 
 
@@ -41,9 +48,7 @@ public class BRStateInit : BRState
     public override void Init()
     {
         szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting";
-        FormData userInfoTockenForm = new FormData();
-        userInfoTockenForm.szKey = "token";
-        userInfoTockenForm.szValue = "dyt2Sys5Q3JIdnRMVWlRa0dFaEtyZz09OjprMmlTbVBlNTA4dVVmSjlI";
+        FormData userInfoTockenForm = CreateFormData("token", BlueRed.UserToken);
         listUserInfoFormData.Add(userInfoTockenForm);
     }
 
@@ -73,9 +78,11 @@ public class BRStateInit : BRState
     public override void OnCallBack(string jsonData, BlueRed br)
     {
         var data = JsonUtility.FromJson<BlueredBattingSettingPacket>(jsonData);
-        br.SetDividenRateText(BlueRed.SideType.Blue, data.rslt_set.win_dividend);
-        br.SetDividenRateText(BlueRed.SideType.Green, data.rslt_set.draw_dividend);
-        br.SetDividenRateText(BlueRed.SideType.Red, data.rslt_set.lose_dividend);
+        var rslt_set = data.rslt_set;
+        br.SetBetNums(rslt_set.batting_sort);
+        br.SetDividenRateText(BlueRed.SideType.Blue, rslt_set.win_dividend);
+        br.SetDividenRateText(BlueRed.SideType.Green, rslt_set.draw_dividend);
+        br.SetDividenRateText(BlueRed.SideType.Red, rslt_set.lose_dividend);
 
         br.StartCorWebRequest(eState.InitUserInfo, userInfoAddress, listUserInfoFormData, OnCallBackUserInfo);
     }
@@ -92,6 +99,7 @@ public class BRStateInit : BRState
 public class BRStateReady : BRState
 {
     private int nRoomNumber;
+    private string szPrevPlayResult = null;
     public int RoomNumber { get { return nRoomNumber; } }
 
     public BRStateReady()
@@ -125,16 +133,19 @@ public class BRStateReady : BRState
     public override void OnCallBack(string jsonData, BlueRed br)
     {
         var data = JsonUtility.FromJson<RecvBlueredRoomInfoCheckPacket>(jsonData);
-        nRoomNumber = data.rslt_set.bluered_room_info.game_no;
-        DateTime szEndDateTime = Convert.ToDateTime(data.rslt_set.bluered_room_info.batting_end_dt);
-        DateTime szNowDateTime = DateTime.Now;
+        var bluered_room_info = data.rslt_set.bluered_room_info;
+        nRoomNumber = bluered_room_info.game_no;
+        DateTime szEndDateTime = Convert.ToDateTime(bluered_room_info.batting_end_dt);
+        DateTime szNowDateTime = Convert.ToDateTime(bluered_room_info.current_date);
 
         TimeSpan diffTime = szEndDateTime - szNowDateTime;
 
         br.time = diffTime.Seconds;
         bool bChangeState = br.UpdateTimer();
-        if (bChangeState == true)
+        string szNowPlayResult = bluered_room_info.play_result;
+        if (szPrevPlayResult == null || szPrevPlayResult != szNowPlayResult)
         {
+            szPrevPlayResult = szNowPlayResult;
             br.StopCoroutine(m_State);
             br.ChangeState(br.stateResult);
         }
@@ -196,7 +207,7 @@ public class BRStateResult : BRState
 
     public override void Init()
     {
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_join_proc";
+        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_user_result_proc";
     }
 
     public override void Enter(BlueRed br)
@@ -206,8 +217,12 @@ public class BRStateResult : BRState
 
         BRStateReady stateReady = br.stateReady as BRStateReady;
         int nRoomNumber = stateReady.RoomNumber;
+        FormData userInfoRoomNumForm = CreateFormData("game_no", nRoomNumber.ToString());
+        listFormData.Add(userInfoRoomNumForm);
+        FormData userInfoTockenForm = CreateFormData("token", BlueRed.UserToken);
+        listFormData.Add(userInfoTockenForm);
 
-        br.SetTrendResult(BlueRed.SideType.Blue); //트렌드에 결과 값을 추가 (임시코드)
+        br.StartCorWebRequest(eState.Result, szPostAddress, listFormData, OnCallBack);
     }
 
     public override void Update(BlueRed br)
@@ -222,7 +237,15 @@ public class BRStateResult : BRState
 
     public override void OnCallBack(string jsonData, BlueRed br)
     {
+        var data = JsonUtility.FromJson<RecvUserGameResultPacket>(jsonData);
+        var rslt_Set = data.rslt_set;
 
+        if(rslt_Set.last_user_star_su != null && rslt_Set.last_user_star_su != "")
+        {
+            int lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
+            br.SetUserInfo(null, null, lastUserStarNum);
+        }
+        br.SetTrendResult(BlueRed.SideType.Blue); //트렌드에 결과 값을 추가 (임시코드)
     }
 }
 

@@ -57,6 +57,7 @@ public class RecvBlueredRoomInfoCheckPacket : RecvPacket
         public string room_end_dt;
         public string batting_start_dt;
         public string batting_end_dt;
+        public string current_date;
         public int win_join_su;
         public int draw_join_su;
         public int lose_join_su;
@@ -93,8 +94,21 @@ public class RecvBlueredJoinProcPacket : RecvPacket
     public RsltSet rslt_set;
 }
 
+public class RecvUserGameResultPacket : RecvPacket
+{ //게임 결과
+    [System.Serializable]
+    public struct UserData
+    {
+        public string rtv; //결과 SUCC : 성공, FALSE : 실패
+        public int game_no;
+        public string token;
+        public string cal_star_su; //배당(배수 절대값)
+        public string last_user_star_su; //최종코인수
+    }
+    public UserData rslt_set;
+}
 
-
+//------------------------------------------------------
 
 public class RecvUserBetSettingPacket : RecvPacket
 { //베팅값 셋팅
@@ -104,21 +118,6 @@ public class RecvUserBetSettingPacket : RecvPacket
         public string rtv; //결과 SUCC : 성공, FALSE : 실패
         public List<int> batting_sort; //베팅종류
         public List<int> multiple; //배수정보
-    }
-    public UserData rslt_set;
-}
-
-public class RecvUserGameResultPacket : RecvPacket
-{ //게임 결과
-    [System.Serializable]
-    public struct UserData
-    {
-        public string rtv; //결과 SUCC : 성공, FALSE : 실패
-        public string play_result; //결과값 ("WIN" / "LOSE")
-        public int index;
-        public int multiple_su; //배당(배수 절대값)
-        public int cal_star_su; //게임비(차감, 증감 금액)
-        public int last_user_star_su; //최종코인수
     }
     public UserData rslt_set;
 }
