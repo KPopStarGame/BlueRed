@@ -134,7 +134,8 @@ public class BlueRed : MonoBehaviour
     private int[] _trendData = new int[3] { 0, 0, 0 };
     private float[] _symbolProp = new float[3];
 
-
+    //ServerCoin
+    private int[] coinCount = new int[4];
 
 
     public float time
@@ -197,6 +198,14 @@ public class BlueRed : MonoBehaviour
         _betCount = 0;
     }
 
+    public void ResetCoinCount()
+    {
+        for (int i = 0; i < coinCount.Length; i++)
+        {
+            coinCount[i] = 0;
+        }
+    }
+
     #region BetToggles
     //하단 베팅 금액 토글 초기화
     public void SetBetNums(List<int> betNums)
@@ -251,19 +260,78 @@ public class BlueRed : MonoBehaviour
         totalBetTexts[index].text = string.Format("{0:#,0}", _betNums[index]);
     }
 
+    public int GetDiffValue(SideType type, int totalBet)
+    {
+        int index = (int)type;
+        int storageBet = _betNums[index];
+        return totalBet - storageBet;
+    }
+
+    public void AddServerBatCoin(SideType type, int totalBet)
+    {
+        ResetCoinCount();
+        int nDiffValue = GetDiffValue(type, totalBet);
+        if(nDiffValue == 0)
+        {
+            return;
+        }
+        while(nDiffValue > 0)
+        {
+            int nMinusBetValue = 0;
+            int nArrayCount = 0;
+            GetMinusCoinValue(nDiffValue, ref nArrayCount, ref nMinusBetValue);
+            for (int i = 0; i < nArrayCount + 1; i++)
+            {
+                coinCount[i] += 1;
+            }
+            nDiffValue -= nMinusBetValue;
+        }
+        for (int i = 0; i < coinCount.Length; i++)
+        {
+            int nCoinCount = coinCount[i];
+            if(nCoinCount == 0)
+            {
+                continue;
+            }
+            for (int n = 0; n < nCoinCount; n++)
+            {
+                BetCoin(type, false, i);
+            }
+        }
+    }
+
+    public void GetMinusCoinValue(int totalValue, ref int arrayCount, ref int minusBetValue)
+    {
+        arrayCount = 0;
+        minusBetValue = 0;
+
+        for(int i = 0; i < _betTable.Length; i++)
+        {
+            int nCompareValue = minusBetValue + _betTable[i];
+            if(nCompareValue <= totalValue)
+            {
+                arrayCount = i;
+                minusBetValue = nCompareValue;
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
 
     public void AddBetNumsText(SideType type, int bet)
     {
         int index = (int)type;
         _betNums[index] += bet;
         totalBetTexts[index].text = string.Format("{0:#,0}", _betNums[index]);
-        ReduceRemainCoin(bet);
     }
 
     public void SetMyBetNumsText(SideType type, int bet)
     {
         int index = (int)type;
-        myBetTexts[index].text = string.Format("{0:#,0}", bet);
+        myBetTexts[index].text = string.Format("{0:#,0}", bet); 
+        ReduceRemainCoin(bet);
     }
     
     public void SetDividenRateText(SideType type, int rate)
@@ -275,7 +343,7 @@ public class BlueRed : MonoBehaviour
 
     public void OnClickBetBlueArea()
     {
-        if (!IsInState(stateReady))
+        if (!IsInState(stateBetting))
             return;
         if (CheckBetCoin(SideType.Blue) == false)
         {
@@ -287,7 +355,7 @@ public class BlueRed : MonoBehaviour
 
     public void OnClickBetGreenArea()
     {
-        if (!IsInState(stateReady))
+        if (!IsInState(stateBetting))
             return;
         if (CheckBetCoin(SideType.Green) == false)
         {
@@ -299,7 +367,7 @@ public class BlueRed : MonoBehaviour
 
     public void OnClickBetRedArea()
     {
-        if (!IsInState(stateReady))
+        if (!IsInState(stateBetting))
             return;
         if(CheckBetCoin(SideType.Red) == false)
         {
@@ -480,7 +548,7 @@ public class BlueRed : MonoBehaviour
         noticeStartBet.SetActive(true);
         noticeMyBet.gameObject.SetActive(false);
 
-        Invoke("CloseNotice", 0.5f);
+        //Invoke("CloseNotice", 0.5f);
     }
     public void PopupNoticeMyBet()
     {
@@ -588,7 +656,6 @@ public class BlueRed : MonoBehaviour
             }
             else
             {
-                Debug.Log("#004_001 : " + p_webRequest.downloadHandler.text);
                 action?.Invoke(p_webRequest.downloadHandler.text, this);
             }
         }
@@ -619,7 +686,6 @@ public class BlueRed : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("#004_001 : " + p_webRequest.downloadHandler.text);
                     action?.Invoke(p_webRequest.downloadHandler.text, this);
                 }
             }
@@ -676,8 +742,8 @@ public class BlueRed : MonoBehaviour
     public void StartSetBetCoin()
     {
         m_listFormData.Clear();
-        BRStateReady p_stateReady = stateReady as BRStateReady;
-        int nRoomNumber = p_stateReady.RoomNumber;
+        BRStateBetting p_stateBetting = stateBetting as BRStateBetting;
+        int nRoomNumber = p_stateBetting.RoomNumber;
         FormData formData_GameNum = CreateFormData("game_no", nRoomNumber.ToString());
         m_listFormData.Add(formData_GameNum);
 
@@ -766,6 +832,7 @@ public class BlueRed : MonoBehaviour
         userInfoTockenForm.szValue = value;
         return userInfoTockenForm;
     }
+
     //아래는 참고용 예시 코드
     /* 
     

@@ -8,6 +8,7 @@ public enum eState
     Init = 0,
     InitUserInfo,
     Ready,
+    Bet,
     Betting,
     Result,
     Reward,
@@ -98,18 +99,16 @@ public class BRStateInit : BRState
 
 public class BRStateReady : BRState
 {
-    private int nRoomNumber;
-    private string szPrevPlayResult = null;
-    public int RoomNumber { get { return nRoomNumber; } }
+    private string szPrevRoomStartTime = "";
 
     public BRStateReady()
     {
-        m_State = eState.Ready;
         Init();
     }
 
     public override void Init()
     {
+        m_State = eState.Ready;
         szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check";
     }
 
@@ -118,11 +117,66 @@ public class BRStateReady : BRState
         br.ResetGame();
         br.PopupNoticeStartBet();
         br.StartCorWebRequest(m_State, szPostAddress, listFormData, OnCallBack, true);
+        br.time = 10;
     }
 
     public override void Update(BlueRed br)
     {
         //br.ChangeState(br.stateBetting);
+    }
+
+    public override void Leave(BlueRed br)
+    {
+        br.CloseNotice();
+    }
+
+    public override void OnCallBack(string jsonData, BlueRed br)
+    {
+        var data = JsonUtility.FromJson<RecvBlueredRoomInfoCheckPacket>(jsonData);
+        var bluered_room_info = data.rslt_set.bluered_room_info;
+
+        string szNowRoomStartTime = bluered_room_info.room_start_dt;
+        bool bRoomChange = szPrevRoomStartTime != szNowRoomStartTime;
+
+        string szNowPlayResult = bluered_room_info.play_result;
+
+        if (szNowPlayResult == "" && bRoomChange == true)
+        {
+            szPrevRoomStartTime = szNowRoomStartTime;
+
+            br.StopCoroutine(m_State);
+            br.ChangeState(br.stateBetting);
+        }
+    }
+}
+
+
+public class BRStateBetting : BRState
+{
+    private int nRoomNumber;
+    private int nWaitOneFrame;
+    public int RoomNumber { get { return nRoomNumber; } }
+
+    public BRStateBetting()
+    {
+        Init();
+    }
+
+    public override void Init()
+    {
+        m_State = eState.Bet;
+        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check";
+    }
+
+    public override void Enter(BlueRed br)
+    {
+        nWaitOneFrame = 0;
+        br.StartCorWebRequest(m_State, szPostAddress, listFormData, OnCallBack, true);
+    }
+
+    public override void Update(BlueRed br)
+    {
+
     }
 
     public override void Leave(BlueRed br)
@@ -134,72 +188,49 @@ public class BRStateReady : BRState
     {
         var data = JsonUtility.FromJson<RecvBlueredRoomInfoCheckPacket>(jsonData);
         var bluered_room_info = data.rslt_set.bluered_room_info;
+
         nRoomNumber = bluered_room_info.game_no;
+
         DateTime szEndDateTime = Convert.ToDateTime(bluered_room_info.batting_end_dt);
         DateTime szNowDateTime = Convert.ToDateTime(bluered_room_info.current_date);
-
         TimeSpan diffTime = szEndDateTime - szNowDateTime;
-
         br.time = diffTime.Seconds;
         bool bChangeState = br.UpdateTimer();
+
         string szNowPlayResult = bluered_room_info.play_result;
-        if (szPrevPlayResult == null || szPrevPlayResult != szNowPlayResult)
+
+        br.AddServerBatCoin(BlueRed.SideType.Blue, bluered_room_info.win_batting_cnt);
+        br.AddServerBatCoin(BlueRed.SideType.Green, bluered_room_info.draw_batting_cnt);
+        br.AddServerBatCoin(BlueRed.SideType.Red, bluered_room_info.lose_batting_cnt);
+
+        if (szNowPlayResult != "" && bChangeState == true)
         {
-            szPrevPlayResult = szNowPlayResult;
+            BRStateResult stateResult = br.stateResult as BRStateResult;
+            if (stateResult != null)
+            {
+                stateResult.SetResult(szNowPlayResult);
+            }
             br.StopCoroutine(m_State);
             br.ChangeState(br.stateResult);
         }
-    }
-}
-
-
-public class BRStateBetting : BRState
-{
-    float _elapsedTime;
-
-    public BRStateBetting()
-    {
-        Init();
-    }
-
-    public override void Init()
-    {
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting";
-    }
-
-    public override void Enter(BlueRed br)
-    {
-        _elapsedTime = 0;
-    }
-
-    public override void Update(BlueRed br)
-    {
-        _elapsedTime += Time.deltaTime;
-
-        //다른 유저들의 베팅 연출 (임시코드. 서버 연동시 변경)
-        if (_elapsedTime > 0.5f) //5초에 하나씩 랜덤 위치, 랜덤 코인
+        else if(bChangeState == true)
         {
-            br.BetCoin((BlueRed.SideType)UnityEngine.Random.Range(0, 3), false, UnityEngine.Random.Range(0, 3));
-            _elapsedTime = 0;
+            if(nWaitOneFrame == 0)
+            {
+                nWaitOneFrame += 1;
+                return;
+            }
+            br.StopCoroutine(m_State);
+            br.ChangeState(br.stateReady);
         }
-
-        if (br.UpdateTimer())
-            br.ChangeState(br.stateResult);
-    }
-
-    public override void Leave(BlueRed br)
-    {
-
-    }
-
-    public override void OnCallBack(string jsonData, BlueRed br)
-    {
-
     }
 }
 
 public class BRStateResult : BRState
 {
+    private BlueRed.SideType resultType;
+    public BlueRed.SideType ResultType { get { return resultType; } }
+
     public BRStateResult()
     {
         Init();
@@ -215,8 +246,8 @@ public class BRStateResult : BRState
         br.PlayAudio(0, br.acResult);
         br.resultAct.gameObject.SetActive(true);
 
-        BRStateReady stateReady = br.stateReady as BRStateReady;
-        int nRoomNumber = stateReady.RoomNumber;
+        BRStateBetting stateBetting = br.stateBetting as BRStateBetting;
+        int nRoomNumber = stateBetting.RoomNumber;
         FormData userInfoRoomNumForm = CreateFormData("game_no", nRoomNumber.ToString());
         listFormData.Add(userInfoRoomNumForm);
         FormData userInfoTockenForm = CreateFormData("token", BlueRed.UserToken);
@@ -245,7 +276,23 @@ public class BRStateResult : BRState
             int lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
             br.SetUserInfo(null, null, lastUserStarNum);
         }
-        br.SetTrendResult(BlueRed.SideType.Blue); //트렌드에 결과 값을 추가 (임시코드)
+        br.SetTrendResult(resultType); //트렌드에 결과 값을 추가 (임시코드)
+    }
+
+    public void SetResult(string szResult)
+    {
+        switch (szResult)
+        {
+            case "WIN":
+                resultType = BlueRed.SideType.Blue;
+                break;
+            case "DROW":
+                resultType = BlueRed.SideType.Green;
+                break;
+            case "LOSE":
+                resultType = BlueRed.SideType.Red;
+                break;
+        }
     }
 }
 
@@ -269,7 +316,11 @@ public class BRStateReward : BRState
     public override void Enter(BlueRed br)
     {
         _elapsedTime = 0;
-        br.SetWinAnim(BlueRed.SideType.Blue, true); //임시 연출
+
+
+        BRStateResult stateResult = br.stateResult as BRStateResult;
+
+        br.SetWinAnim(stateResult != null ? stateResult.ResultType : BlueRed.SideType.Blue, true); //임시 연출
         br.RestoreCoins();
 
         br.PlayAudio(0, br.acWin);
