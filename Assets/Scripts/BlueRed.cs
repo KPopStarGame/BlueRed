@@ -29,6 +29,15 @@ public class BlueRed : MonoBehaviour
 
     void Awake()
     {
+        if(bTestVer == false)
+        {
+            GetUserToken();
+        }
+        stateInit = new BRStateInit(bTestVer);
+        stateReady = new BRStateReady(bTestVer);
+        stateBetting = new BRStateBetting(bTestVer);
+        stateResult = new BRStateResult(bTestVer);
+        stateReward = new BRStateReward(bTestVer);
         ChangeState(stateInit);
     }
 
@@ -37,12 +46,15 @@ public class BlueRed : MonoBehaviour
         if (_currentState != null)
             _currentState.Update(this);
     }
+
+    public bool bTestVer = true;
+
     //State Instance
-    public BRState stateInit = new BRStateInit();
-    public BRState stateReady = new BRStateReady();
-    public BRState stateBetting = new BRStateBetting();
-    public BRState stateResult = new BRStateResult();
-    public BRState stateReward = new BRStateReward();
+    public BRState stateInit;
+    public BRState stateReady;
+    public BRState stateBetting;
+    public BRState stateResult;
+    public BRState stateReward;
 
 
 

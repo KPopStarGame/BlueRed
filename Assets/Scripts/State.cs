@@ -20,7 +20,7 @@ public abstract class BRState
     public eState m_State;
     protected string szPostAddress;
     protected List<FormData> listFormData = new List<FormData>();
-    public abstract void Init();
+    public abstract void Init(bool bTestVer);
     public abstract void Enter(BlueRed br);
     public abstract void Update(BlueRed br);
     public abstract void Leave(BlueRed br);
@@ -38,17 +38,18 @@ public abstract class BRState
 public class BRStateInit : BRState
 {
     private bool bChangeState = false;
-    private string userInfoAddress = "https://kpoplive.m.codewiz.kr/game/game_user_info";
+    private string userInfoAddress;
     protected List<FormData> listUserInfoFormData = new List<FormData>();
 
-    public BRStateInit()
+    public BRStateInit(bool bTestVer)
     {
-        Init();
+        Init(bTestVer);
     }
 
-    public override void Init()
+    public override void Init(bool bTestVer)
     {
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting";
+        userInfoAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/game_user_info" : "/game/game_user_info";
+        szPostAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting" : "/game/bluered_batting_setting";
         FormData userInfoTockenForm = CreateFormData("token", BlueRed.UserToken);
         listUserInfoFormData.Add(userInfoTockenForm);
     }
@@ -101,15 +102,15 @@ public class BRStateReady : BRState
 {
     private string szPrevRoomStartTime = "";
 
-    public BRStateReady()
+    public BRStateReady(bool bTestVer)
     {
-        Init();
+        Init(bTestVer);
     }
 
-    public override void Init()
+    public override void Init(bool bTestVer)
     {
         m_State = eState.Ready;
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check";
+        szPostAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check" : "/game/bluered_room_info_check";
     }
 
     public override void Enter(BlueRed br)
@@ -157,15 +158,15 @@ public class BRStateBetting : BRState
     private int nWaitOneFrame;
     public int RoomNumber { get { return nRoomNumber; } }
 
-    public BRStateBetting()
+    public BRStateBetting(bool bTestVer)
     {
-        Init();
+        Init(bTestVer);
     }
 
-    public override void Init()
+    public override void Init(bool bTestVer)
     {
         m_State = eState.Bet;
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check";
+        szPostAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_room_info_check" : "/game/bluered_room_info_check";
     }
 
     public override void Enter(BlueRed br)
@@ -231,14 +232,14 @@ public class BRStateResult : BRState
     private BlueRed.SideType resultType;
     public BlueRed.SideType ResultType { get { return resultType; } }
 
-    public BRStateResult()
+    public BRStateResult(bool bTestVer)
     {
-        Init();
+        Init(bTestVer);
     }
 
-    public override void Init()
+    public override void Init(bool bTestVer)
     {
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_user_result_proc";
+        szPostAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_user_result_proc" : "/game/bluered_user_result_proc";
     }
 
     public override void Enter(BlueRed br)
@@ -303,14 +304,14 @@ public class BRStateReward : BRState
     private int _coinDrop; //떨굴 동전갯수
     float _elapsedTime;
 
-    public BRStateReward()
+    public BRStateReward(bool bTestVer)
     {
-        Init();
+        Init(bTestVer);
     }
 
-    public override void Init()
+    public override void Init(bool bTestVer)
     {
-        szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting";
+        //szPostAddress = "https://kpoplive.m.codewiz.kr/game/bluered_batting_setting";
     }
 
     public override void Enter(BlueRed br)
