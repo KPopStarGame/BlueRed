@@ -74,7 +74,6 @@ public class BRStateInit : BRState
 
     public override void Leave(BlueRed br)
     {
-
     }
 
     public override void OnCallBack(string jsonData, BlueRed br)
@@ -179,7 +178,6 @@ public class BRStateBetting : BRState
 
     public override void Update(BlueRed br)
     {
-
     }
 
     public override void Leave(BlueRed br)
@@ -272,6 +270,7 @@ public class BRStateResult : BRState
     {
         br.PlayAudio(0, br.acResult);
         br.resultAct.gameObject.SetActive(true);
+        br.SetTrendResult(resultType); //트렌드에 결과 값을 추가 (임시코드)
 
         BRStateBetting stateBetting = br.stateBetting as BRStateBetting;
         bool bCorrect = stateBetting.Correct;
@@ -290,7 +289,6 @@ public class BRStateResult : BRState
 
     public override void Update(BlueRed br)
     {
-
     }
 
     public override void Leave(BlueRed br)
@@ -308,7 +306,6 @@ public class BRStateResult : BRState
             int lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
             br.SetUserInfo(null, null, lastUserStarNum);
         }
-        br.SetTrendResult(resultType); //트렌드에 결과 값을 추가 (임시코드)
     }
 
     public void SetResult(string szResult)

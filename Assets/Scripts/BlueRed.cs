@@ -344,8 +344,7 @@ public class BlueRed : MonoBehaviour
     public void SetMyBetNumsText(SideType type, int bet)
     {
         int index = (int)type;
-        myBetTexts[index].text = string.Format("{0:#,0}", bet); 
-        ReduceRemainCoin(bet);
+        myBetTexts[index].text = string.Format("{0:#,0}", bet);
     }
     
     public void SetDividenRateText(SideType type, int rate)
@@ -416,6 +415,7 @@ public class BlueRed : MonoBehaviour
             _currentBet.type = type;
 
             SetMyBetNumsText(type, _currentBet.sum);
+            ReduceRemainCoin(_betTable[betIndex]);
         }
         AddBetNumsText(type, _betTable[betIndex]);
 
@@ -666,7 +666,7 @@ public class BlueRed : MonoBehaviour
 
             if (p_webRequest.isNetworkError)
             {
-                Debug.Log(p_webRequest.error);
+                Debug.Log("#004_WebRequest_Error : " + p_webRequest.error);
             }
             else
             {
@@ -696,7 +696,7 @@ public class BlueRed : MonoBehaviour
 
                 if (p_webRequest.isNetworkError)
                 {
-                    Debug.Log(p_webRequest.error);
+                    Debug.Log("#004_WebRequestLoop_Error : " + p_webRequest.error);
                 }
                 else
                 {
@@ -721,7 +721,9 @@ public class BlueRed : MonoBehaviour
     {
         if(_imageUrl != null)
         {
-            StartCoroutine(DownloadImage(string.Format("{0}{1}", "https://kpoplive.m.codewiz.kr", _imageUrl)));
+            bool bCheckMobilePlatfrom = Application.platform == RuntimePlatform.Android | Application.platform == RuntimePlatform.IPhonePlayer;
+            string szFrontURL = string.Format("{0}{1}{2}", "https://kpoplive.", bCheckMobilePlatfrom ? "m" : "www", ".codewiz.kr");
+            StartCoroutine(DownloadImage(string.Format("{0}{1}", "https://kpoplive.www.codewiz.kr", _imageUrl)));
         }
         if(_nickName != null)
         {
@@ -750,7 +752,8 @@ public class BlueRed : MonoBehaviour
         FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
         m_listFormData.Add(formData_BetValue);
 
-        StartCorWebRequest(eState.Betting, "https://kpoplive.m.codewiz.kr/game/game_user_star_check", m_listFormData, OnCallBack_CheckStar);
+        string szAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/game_user_star_check" : "/game/game_user_star_check";
+        StartCorWebRequest(eState.Betting, szAddress, m_listFormData, OnCallBack_CheckStar);
     }
 
     public void StartSetBetCoin()
@@ -767,7 +770,6 @@ public class BlueRed : MonoBehaviour
         int betValue = _betTable[_betIndex];
         FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
         m_listFormData.Add(formData_BetValue);
-
         string selectValue = null;
         switch(_betSide)
         {
@@ -784,19 +786,23 @@ public class BlueRed : MonoBehaviour
         FormData formData_SelectValue = CreateFormData("select_value", selectValue);
         m_listFormData.Add(formData_SelectValue);
 
-        StartCorWebRequest(eState.Betting, "https://kpoplive.m.codewiz.kr/game/bluered_join_proc", m_listFormData, OnCallBack_JoinProc);
+        string szAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_join_proc" : "/game/bluered_join_proc";
+
+        StartCorWebRequest(eState.Betting, szAddress, m_listFormData, OnCallBack_JoinProc);
     }
 
     public void OnCallBack_CheckStar(string jsonData, BlueRed br)
     {
         var data = JsonUtility.FromJson<RecvUserStarCheckPacket>(jsonData);
         var rslt_Set = data.rslt_set;
-        switch(rslt_Set.rtv)
+
+        switch (rslt_Set.rtv)
         {
             case "SUCC":
                 StartSetBetCoin();
                 break;
             case "FALSE":
+                //#004_Show_Me_The_Money
                 break;
         }
     }
@@ -832,6 +838,7 @@ public class BlueRed : MonoBehaviour
         if (kvPair.Length == 2 && kvPair[0] == "token")
         { //success
             _userToken = kvPair[1];
+            _userToken = "VWd3Mjl6dE5La0Jwc2JtR3QxdHVQdz09OjpiRU55a2cwVmZaanQ1WHc0";
         }
         else
         { //error: bad format

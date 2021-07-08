@@ -9951,6 +9951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7907767d5f7ca2d43b78d9f566d53904, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bTestVer: 0
   timerText: {fileID: 1006744071}
   betAreas:
   - {fileID: 1723973097}
