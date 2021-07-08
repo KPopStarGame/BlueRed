@@ -156,6 +156,8 @@ public class BRStateBetting : BRState
 {
     private int nRoomNumber;
     private int nWaitOneFrame;
+    private bool bCorrect;
+    public bool Correct { get { return bCorrect; } }
     public int RoomNumber { get { return nRoomNumber; } }
 
     public BRStateBetting(bool bTestVer)
@@ -204,8 +206,32 @@ public class BRStateBetting : BRState
         br.AddServerBatCoin(BlueRed.SideType.Green, bluered_room_info.draw_batting_cnt);
         br.AddServerBatCoin(BlueRed.SideType.Red, bluered_room_info.lose_batting_cnt);
 
+        if(bChangeState == true)
+        {
+            ;
+        }
+
         if (szNowPlayResult != "" && bChangeState == true)
         {
+            BlueRed.SideType sideTypeClient = br.BetSide;
+            BlueRed.SideType sideTypeServer = BlueRed.SideType.None;
+            switch (szNowPlayResult)
+            {
+                case "WIN":
+                    sideTypeServer = BlueRed.SideType.Blue;
+                    break;
+                case "DROW":
+                    sideTypeServer = BlueRed.SideType.Green;
+                    break;
+                case "LOSE":
+                    sideTypeServer = BlueRed.SideType.Red;
+                    break;
+                case "NONE":
+                    sideTypeServer = BlueRed.SideType.None;
+                    break;
+            }
+            bCorrect = sideTypeClient == sideTypeServer && sideTypeServer != BlueRed.SideType.None;
+
             BRStateResult stateResult = br.stateResult as BRStateResult;
             if (stateResult != null)
             {
@@ -216,7 +242,7 @@ public class BRStateBetting : BRState
         }
         else if(bChangeState == true)
         {
-            if(nWaitOneFrame == 0)
+            if(nWaitOneFrame < 5)
             {
                 nWaitOneFrame += 1;
                 return;
@@ -248,6 +274,11 @@ public class BRStateResult : BRState
         br.resultAct.gameObject.SetActive(true);
 
         BRStateBetting stateBetting = br.stateBetting as BRStateBetting;
+        bool bCorrect = stateBetting.Correct;
+        if(bCorrect == false)
+        {
+            return;
+        }
         int nRoomNumber = stateBetting.RoomNumber;
         FormData userInfoRoomNumForm = CreateFormData("game_no", nRoomNumber.ToString());
         listFormData.Add(userInfoRoomNumForm);

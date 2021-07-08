@@ -62,7 +62,8 @@ public class BlueRed : MonoBehaviour
     {
         Blue,
         Green,
-        Red
+        Red,
+        None,
     }
 
     public Text timerText;
@@ -129,6 +130,7 @@ public class BlueRed : MonoBehaviour
     private int _betIndex;
     private int _betCount;
     private SideType _betSide;
+    public SideType BetSide { get { return _betSide; } }
     private const int _betLimit = 5; //유저의 최대 베팅 횟수는 5회
 
     //My Bet
@@ -206,7 +208,7 @@ public class BlueRed : MonoBehaviour
             SetBetNumsText((SideType)i, 0);
             SetMyBetNumsText((SideType)i, 0);
         }
-
+        _betSide = SideType.None;
         _betCount = 0;
     }
 
