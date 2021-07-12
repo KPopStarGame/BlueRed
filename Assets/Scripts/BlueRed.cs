@@ -88,6 +88,8 @@ public class BlueRed : MonoBehaviour
     public Toggle[] betToggles = new Toggle[4]; //베팅 토글
     public Text[] betToggleNums = new Text[4];
 
+    public Button keepBetButton;
+
     [Header("유저 정보")]
     public RawImage userProfile;
     public Text userNickName;
@@ -117,9 +119,9 @@ public class BlueRed : MonoBehaviour
 
 
     [Header("알림")]
-    public GameObject noticeObj;
-    public GameObject noticeStartBet;
-    public Text noticeMyBet;
+    public GameObject noticeStartObj;
+    public GameObject noticeBetObj;
+    public Text noticeMyBetText;
 
     public RewardCoin[] rewardCoins = new RewardCoin[20];
     public static Queue<RewardCoin> coinPool = new Queue<RewardCoin>();
@@ -202,7 +204,18 @@ public class BlueRed : MonoBehaviour
     }
 
     public void ResetGame()
-    {
+    {  
+        for(int i = 0; i < _currentBet.betNums.Length; i++)
+        {
+            _prevBet.betNums[i] = _currentBet.betNums[i];
+            _currentBet.betNums[i] = 0;
+        }
+        _prevBet.sum = _currentBet.sum;
+        _prevBet.type = _currentBet.type;
+        _currentBet.sum = 0;
+
+        keepBetButton.interactable = _prevBet.sum > 0 && _currentBet.sum == 0;
+
         for (int i = 0; i < 3; i++)
         {
             SetBetNumsText((SideType)i, 0);
@@ -236,10 +249,10 @@ public class BlueRed : MonoBehaviour
     {
         betToggles[0].isOn = true;
         _betIndex = 0;
-        betToggles[0].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 0; PlayClickSound(); /*PlayAudio(3, acButton); RequestStarCheck();*/ }); //베팅 토글버튼 입력시 액션
-        betToggles[1].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 1; PlayClickSound(); /*PlayAudio(3, acButton); RequestStarCheck();*/ });
-        betToggles[2].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 2; PlayClickSound(); /*PlayAudio(3, acButton); RequestStarCheck();*/ });
-        betToggles[3].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 3; PlayClickSound(); /*PlayAudio(3, acButton); RequestStarCheck();*/ });
+        betToggles[0].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 0; PlayClickSound(); }); //베팅 토글버튼 입력시 액션
+        betToggles[1].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 1; PlayClickSound(); });
+        betToggles[2].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 2; PlayClickSound(); });
+        betToggles[3].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 3; PlayClickSound(); });
     }
     #endregion
 
@@ -404,6 +417,20 @@ public class BlueRed : MonoBehaviour
         return true;
     }
 
+    public void KeepBetting()
+    {
+        if (_currentBet.sum > 0) //이미 베팅되어 있다면 불가
+            return;
+
+        for(int i = 0; i < _prevBet.betNums.Length; i++)
+        {
+            for(int n = 0; n < _prevBet.betNums[i]; n++)
+            {
+                BetCoin(_prevBet.type, true, i);
+            }
+        }
+    }
+
     public void BetCoin(SideType type, bool myBet, int betIndex)
     {
         if (myBet)
@@ -416,6 +443,8 @@ public class BlueRed : MonoBehaviour
 
             SetMyBetNumsText(type, _currentBet.sum);
             ReduceRemainCoin(_betTable[betIndex]);
+
+            keepBetButton.interactable = false;
         }
         AddBetNumsText(type, _betTable[betIndex]);
 
@@ -558,26 +587,22 @@ public class BlueRed : MonoBehaviour
      */
     public void PopupNoticeStartBet()
     {
-        noticeObj.SetActive(true);
-        noticeStartBet.SetActive(true);
-        noticeMyBet.gameObject.SetActive(false);
-
+        noticeStartObj.SetActive(true);
         //Invoke("CloseNotice", 0.5f);
     }
     public void PopupNoticeMyBet()
     {
-        noticeObj.SetActive(true);
-        noticeStartBet.SetActive(false);
-        noticeMyBet.gameObject.SetActive(true);
-        noticeMyBet.text = "";
+        noticeBetObj.SetActive(true);
+        //noticeMyBet.text = "My Bet <color=#ffff00ff>12</color>";
+        noticeMyBetText.text = string.Format("My Bet <color=#ffff00ff>{0}</color>", _currentBet.sum);
 
-        Invoke("CloseNotice", 1f);
+        Invoke("CloseNoticeMyBet", 1f);
     }
 
 
-    public void CloseNotice()
+    public void CloseNoticeMyBet()
     {
-        noticeObj.SetActive(false);
+        noticeBetObj.SetActive(false);
     }
 
 

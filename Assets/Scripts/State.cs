@@ -127,7 +127,7 @@ public class BRStateReady : BRState
 
     public override void Leave(BlueRed br)
     {
-        br.CloseNotice();
+        br.noticeStartObj.SetActive(false);
     }
 
     public override void OnCallBack(string jsonData, BlueRed br)
@@ -182,7 +182,7 @@ public class BRStateBetting : BRState
 
     public override void Leave(BlueRed br)
     {
-
+        br.PopupNoticeMyBet();
     }
 
     public override void OnCallBack(string jsonData, BlueRed br)
