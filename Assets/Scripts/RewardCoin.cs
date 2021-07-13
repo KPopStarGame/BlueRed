@@ -23,7 +23,7 @@ public class RewardCoin : MonoBehaviour
 
     public void Set(BlueRed br)
 	{
-		_goalLocation = target.anchoredPosition3D;
+		_goalLocation = target.position;
 		_br = br;
 		gameObject.SetActive(true);
 
@@ -44,7 +44,7 @@ public class RewardCoin : MonoBehaviour
 		_magneto.x = Random.Range(900f, 1200f); //가로 방향으로 끌어당기는 힘
 		_magneto.y = 1f; //세로 방향으로 끌어당기는 힘
 
-		_distance = Vector3.Distance(_goalLocation, _rectTransform.anchoredPosition3D);
+		_distance = Vector3.Distance(_goalLocation, _rectTransform.position);
 		_accelTrigger = false;
 
 	}
@@ -61,7 +61,7 @@ public class RewardCoin : MonoBehaviour
 		_rectTransform.anchoredPosition3D = move;
 
 
-		if(Vector3.Distance(_rectTransform.anchoredPosition3D, _goalLocation) < 50f) //목표 지점의 일정 범위 내로 들어오면 도착으로 간주시킴.
+		if(Vector3.Distance(_rectTransform.position, _goalLocation) < 50f) //목표 지점의 일정 범위 내로 들어오면 도착으로 간주시킴.
         { //도착 => 코인의 소멸처리 => 동전 오브젝트의 재사용을 위해 pool에 다시 집어 넣음
 			BlueRed.coinPool.Enqueue(this);
 			gameObject.SetActive(false);
@@ -75,7 +75,7 @@ public class RewardCoin : MonoBehaviour
 
 	private void UpdateMagnetoMove()
 	{  //끌어당기는 힘의 변화량을 처리
-		float distance = Vector3.Distance(_goalLocation, _rectTransform.anchoredPosition3D);
+		float distance = Vector3.Distance(_goalLocation, _rectTransform.position);
 		if (_accelTrigger == false && _distance >= distance) //가까워지고 있나
 		{
 		}
@@ -88,7 +88,7 @@ public class RewardCoin : MonoBehaviour
 		}
 		_distance = distance;
 
-		_magneticVelocity = _goalLocation - _rectTransform.anchoredPosition3D;
+		_magneticVelocity = _goalLocation - _rectTransform.position;
 		_magneticVelocity.Normalize();
 		//_magneticVelocity.x *= _magneto.x;
 		//_magneticVelocity.y *= _magneto.y;

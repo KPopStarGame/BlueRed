@@ -315,7 +315,7 @@ public class BRStateResult : BRState
             case "WIN":
                 resultType = BlueRed.SideType.Blue;
                 break;
-            case "DROW":
+            case "DRAW":
                 resultType = BlueRed.SideType.Green;
                 break;
             case "LOSE":
