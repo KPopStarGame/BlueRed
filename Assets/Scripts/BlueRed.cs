@@ -424,15 +424,11 @@ public class BlueRed : MonoBehaviour
     public void KeepBetting()
     {
         if (_currentBet.sum > 0) //이미 베팅되어 있다면 불가
-            return;
-
-        for(int i = 0; i < _prevBet.betNums.Length; i++)
         {
-            for(int n = 0; n < _prevBet.betNums[i]; n++)
-            {
-                BetCoin(_prevBet.type, true, i);
-            }
+            return;
         }
+
+        StartCheckPrevBetCoin(_prevBet.sum);
     }
 
     public void BetCoin(SideType type, bool myBet, int betIndex)
@@ -772,6 +768,34 @@ public class BlueRed : MonoBehaviour
         this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
     }
 
+    public void StartCheckPrevBetCoin(int _nIndex)
+    {
+        m_listFormData.Clear();
+        FormData formData_Token = CreateFormData("token", _userToken);
+        m_listFormData.Add(formData_Token);
+
+        int betValue = _nIndex;
+        FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
+        m_listFormData.Add(formData_BetValue);
+
+        string szAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/game_user_star_check" : "/game/game_user_star_check";
+        StartCorWebRequest(eState.Betting, szAddress, m_listFormData, OnCallBack_PrevCheckStar);
+    }
+
+    public void StartCheckBetCoin(int _nIndex)
+    {
+        m_listFormData.Clear();
+        FormData formData_Token = CreateFormData("token", _userToken);
+        m_listFormData.Add(formData_Token);
+
+        int betValue = _nIndex;
+        FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
+        m_listFormData.Add(formData_BetValue);
+
+        string szAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/game_user_star_check" : "/game/game_user_star_check";
+        StartCorWebRequest(eState.Betting, szAddress, m_listFormData, OnCallBack_CheckStar);
+    }
+
     public void StartCheckBetCoin()
     {
         m_listFormData.Clear();
@@ -819,6 +843,30 @@ public class BlueRed : MonoBehaviour
         string szAddress = bTestVer ? "https://kpoplive.m.codewiz.kr/game/bluered_join_proc" : "/game/bluered_join_proc";
 
         StartCorWebRequest(eState.Betting, szAddress, m_listFormData, OnCallBack_JoinProc);
+    }
+    
+    public void OnCallBack_PrevCheckStar(string jsonData, BlueRed br)
+    {
+        var data = JsonUtility.FromJson<RecvUserStarCheckPacket>(jsonData);
+        var rslt_Set = data.rslt_set;
+
+        switch (rslt_Set.rtv)
+        {
+            case "SUCC":
+                for (int i = 0; i < _prevBet.betNums.Length; i++)
+                {
+                    for (int n = 0; n < _prevBet.betNums[i]; n++)
+                    {
+                        StartCheckBetCoin(_betTable[i]);
+                        //BetCoin(_prevBet.type, true, i);
+                    }
+                }
+                break;
+            case "FALSE":
+                keepBetButton.interactable = false;
+                //#004_Show_Me_The_Money
+                break;
+        }
     }
 
     public void OnCallBack_CheckStar(string jsonData, BlueRed br)

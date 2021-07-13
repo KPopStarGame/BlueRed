@@ -355,9 +355,13 @@ public class BRStateReward : BRState
 
         br.PlayAudio(0, br.acWin);
 
-
+        BRStateBetting stateBetting = br.stateBetting as BRStateBetting;
+        bool bCorrect = stateBetting.Correct;
         //_coinDrop = Mathf.Min(50, rewardCash);
-        _coinDrop = 50;
+        if(bCorrect == true)
+        {
+            _coinDrop = 50;
+        }
         _coinCount = 0;
         BlueRed.coinPool.Clear();
         for (int i = 0; i < br.rewardCoins.Length; i++)
