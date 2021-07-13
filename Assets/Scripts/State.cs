@@ -218,7 +218,7 @@ public class BRStateBetting : BRState
                 case "WIN":
                     sideTypeServer = BlueRed.SideType.Blue;
                     break;
-                case "DROW":
+                case "DRAW":
                     sideTypeServer = BlueRed.SideType.Green;
                     break;
                 case "LOSE":

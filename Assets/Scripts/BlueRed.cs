@@ -757,14 +757,15 @@ public class BlueRed : MonoBehaviour
         if(_remainCoin >= 0 && _remainCoin != remainCoin)
         {
             this.remainCoin = _remainCoin;
-            this.remainCoinText.text = this.remainCoin.ToString();
+            //this.remainCoinText.text = this.remainCoin.ToString();
+            this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
         }
     }
 
     public void ReduceRemainCoin(int _reduceValue)
     {
         this.remainCoin -= _reduceValue;
-        this.remainCoinText.text = this.remainCoin.ToString();
+        this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
     }
 
     public void StartCheckBetCoin()
