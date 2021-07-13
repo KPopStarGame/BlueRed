@@ -353,14 +353,19 @@ public class BRStateReward : BRState
         br.SetWinAnim(stateResult != null ? stateResult.ResultType : BlueRed.SideType.Blue, true); //임시 연출
         br.RestoreCoins();
 
-        br.PlayAudio(0, br.acWin);
 
         BRStateBetting stateBetting = br.stateBetting as BRStateBetting;
         bool bCorrect = stateBetting.Correct;
-        //_coinDrop = Mathf.Min(50, rewardCash);
+        
         if(bCorrect == true)
         {
-            _coinDrop = 50;
+            br.PlayAudio(0, br.acWin);
+            _coinDrop = 50; //??
+            _coinDrop = Mathf.Min(50, _coinDrop); //코인연출 상한선은 50개로..
+        }
+        else
+        {
+            _coinDrop = 0;
         }
         _coinCount = 0;
         BlueRed.coinPool.Clear();
@@ -374,6 +379,12 @@ public class BRStateReward : BRState
 
     public override void Update(BlueRed br)
     {
+        if(_coinDrop == 0)
+        {
+            br.ChangeState(br.stateReady);
+        }
+
+
         _elapsedTime += Time.deltaTime;
         if (_elapsedTime > 5)
         {
@@ -399,12 +410,10 @@ public class BRStateReward : BRState
 
             }
         }
-        else if (BlueRed.coinPool.Count >= br.rewardCoins.Length)
+        else if(BlueRed.coinPool.Count >= br.rewardCoins.Length)
         {
             br.ChangeState(br.stateReady);
         }
-
-
     }
 
     public override void Leave(BlueRed br)
