@@ -645,7 +645,7 @@ public class BlueRed : MonoBehaviour
             Coroutine prevCoroutine = m_mapCorutine[state];
             if (prevCoroutine != null)
             {
-                StopCoroutine(prevCoroutine);
+                //StopCoroutine(prevCoroutine);
                 prevCoroutine = null;
             }
             m_mapCorutine[state] = nCoroutine;
@@ -768,8 +768,14 @@ public class BlueRed : MonoBehaviour
         this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
     }
 
+    private int nIndexSetKeepBetting = 0;
+    private int nIndexKeepBetting = 0;
+    private bool bKeepBetting = false;
+    private List<int> m_listPrevKeepBetting = new List<int>();
+
     public void StartCheckPrevBetCoin(int _nIndex)
     {
+        bKeepBetting = false;
         m_listFormData.Clear();
         FormData formData_Token = CreateFormData("token", _userToken);
         m_listFormData.Add(formData_Token);
@@ -788,7 +794,7 @@ public class BlueRed : MonoBehaviour
         FormData formData_Token = CreateFormData("token", _userToken);
         m_listFormData.Add(formData_Token);
 
-        int betValue = _nIndex;
+        int betValue = _betTable[_nIndex];
         FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
         m_listFormData.Add(formData_BetValue);
 
@@ -798,6 +804,7 @@ public class BlueRed : MonoBehaviour
 
     public void StartCheckBetCoin()
     {
+        bKeepBetting = false;
         m_listFormData.Clear();
         FormData formData_Token = CreateFormData("token", _userToken);
         m_listFormData.Add(formData_Token);
@@ -821,10 +828,18 @@ public class BlueRed : MonoBehaviour
         FormData formData_Token = CreateFormData("token", _userToken);
         m_listFormData.Add(formData_Token);
 
-        int betValue = _betTable[_betIndex];
+        int betValue =_betTable[_betIndex];
+        if (bKeepBetting == true)
+        {
+            int nIndex = nIndexSetKeepBetting;
+            betValue = _betTable[m_listPrevKeepBetting[nIndex]];
+            nIndexSetKeepBetting += 1;
+            _betSide = _prevBet.type;
+        }
         FormData formData_BetValue = CreateFormData("batting_su", betValue.ToString());
         m_listFormData.Add(formData_BetValue);
         string selectValue = null;
+
         switch(_betSide)
         {
             case SideType.Blue:
@@ -853,11 +868,16 @@ public class BlueRed : MonoBehaviour
         switch (rslt_Set.rtv)
         {
             case "SUCC":
+                bKeepBetting = true;
+                nIndexSetKeepBetting = 0;
+                nIndexKeepBetting = 0;
+                m_listPrevKeepBetting.Clear();
                 for (int i = 0; i < _prevBet.betNums.Length; i++)
                 {
                     for (int n = 0; n < _prevBet.betNums[i]; n++)
                     {
-                        StartCheckBetCoin(_betTable[i]);
+                        m_listPrevKeepBetting.Add(i);
+                        StartCheckBetCoin(i);
                         //BetCoin(_prevBet.type, true, i);
                     }
                 }
@@ -892,7 +912,26 @@ public class BlueRed : MonoBehaviour
         switch(rslt_Set.rtv)
         {
             case "SUCC":
-                BetCoin(_betSide, true, _betIndex);
+
+                
+                if(bKeepBetting == true)
+                {
+                    lock (m_listPrevKeepBetting)
+                    {
+                        int prevNum = 0;
+                        int nIndex = nIndexKeepBetting;
+                        nIndexKeepBetting += 1;
+                        if (m_listPrevKeepBetting.Count > 0)
+                        {
+                            prevNum = m_listPrevKeepBetting[nIndex];
+                        }
+                        BetCoin(_betSide, true, prevNum);
+                    }
+                }
+                else
+                {
+                    BetCoin(_betSide, true, _betIndex);
+                }
                 break;
         }
     }
