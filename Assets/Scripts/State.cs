@@ -360,7 +360,7 @@ public class BRStateReward : BRState
         if(bCorrect == true)
         {
             br.PlayAudio(0, br.acWin);
-            _coinDrop = 50; //??
+            _coinDrop = br.GetReward();
             _coinDrop = Mathf.Min(50, _coinDrop); //코인연출 상한선은 50개로..
         }
         else
