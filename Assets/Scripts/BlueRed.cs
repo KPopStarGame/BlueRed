@@ -213,8 +213,7 @@ public class BlueRed : MonoBehaviour
         _prevBet.sum = _currentBet.sum;
         _prevBet.type = _currentBet.type;
         _currentBet.sum = 0;
-
-        keepBetButton.interactable = _prevBet.sum > 0 && _currentBet.sum == 0;
+        
 
         for (int i = 0; i < 3; i++)
         {
@@ -223,6 +222,11 @@ public class BlueRed : MonoBehaviour
         }
         _betSide = SideType.None;
         _betCount = 0;
+    }
+
+    public void InitKeepBetButton()
+    {
+        keepBetButton.interactable = _prevBet.sum > 0 && _currentBet.sum == 0;
     }
 
     public void ResetCoinCount()

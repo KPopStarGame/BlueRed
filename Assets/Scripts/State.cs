@@ -173,6 +173,7 @@ public class BRStateBetting : BRState
     public override void Enter(BlueRed br)
     {
         nWaitOneFrame = 0;
+        br.InitKeepBetButton();
         br.StartCorWebRequest(m_State, szPostAddress, listFormData, OnCallBack, true);
     }
 
