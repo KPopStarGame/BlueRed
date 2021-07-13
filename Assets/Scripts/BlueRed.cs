@@ -363,11 +363,21 @@ public class BlueRed : MonoBehaviour
         int index = (int)type;
         myBetTexts[index].text = string.Format("{0:#,0}", bet);
     }
-    
+
+
+    protected int[] _divideRate = new int[3];
+
     public void SetDividenRateText(SideType type, int rate)
     {
         int index = (int)type;
         dividenRateTexts[index].text = string.Format("{0}", rate);
+        _divideRate[index] = rate;
+    }
+
+    public int GetReward()
+    {
+        int index = (int)_currentBet.type;
+        return _divideRate[index] * _currentBet.sum;
     }
 
 
