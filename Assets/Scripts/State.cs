@@ -350,7 +350,6 @@ public class BRStateReward : BRState
 
         BRStateResult stateResult = br.stateResult as BRStateResult;
 
-        br.SetWinAnim(stateResult != null ? stateResult.ResultType : BlueRed.SideType.Blue, true); //임시 연출
         br.RestoreCoins();
 
 
@@ -362,57 +361,58 @@ public class BRStateReward : BRState
             br.PlayAudio(0, br.acWin);
             _coinDrop = br.GetReward();
             _coinDrop = Mathf.Min(50, _coinDrop); //코인연출 상한선은 50개로..
+            br.SetWinAnim(stateResult != null ? stateResult.ResultType : BlueRed.SideType.Blue, true); //임시 연출
         }
         else
         {
             _coinDrop = 0;
         }
         _coinCount = 0;
+        
         BlueRed.coinPool.Clear();
         for (int i = 0; i < br.rewardCoins.Length; i++)
         {
             BlueRed.coinPool.Enqueue(br.rewardCoins[i]);
             br.rewardCoins[i].gameObject.SetActive(false);
         }
-
+        
     }
 
     public override void Update(BlueRed br)
     {
-        if(_coinDrop == 0)
-        {
-            br.ChangeState(br.stateReady);
-        }
-
-
         _elapsedTime += Time.deltaTime;
-        if (_elapsedTime > 5)
-        {
-            //br.ChangeState(br.stateReady);
-        }
 
-
-        //코인 떨구기
-        if (_coinCount < _coinDrop)
+        if (_coinDrop == 0)
         {
-            _elapsedTime += UnityEngine.Time.deltaTime;
-            while (_elapsedTime >= _coinDropInterval)
+            if (_elapsedTime > 2)
             {
-                _elapsedTime -= _coinDropInterval;
-                if (BlueRed.coinPool.Count > 0)
-                {
-                    RewardCoin rewardCoin = BlueRed.coinPool.Dequeue();
-                    rewardCoin.Set(br);
-                    //rsp.PlayAudio(0, rsp.acCoinDrop);
-
-                    ++_coinCount;
-                }
-
+                br.ChangeState(br.stateReady);
             }
         }
-        else if(BlueRed.coinPool.Count >= br.rewardCoins.Length)
+        else
         {
-            br.ChangeState(br.stateReady);
+            //코인 떨구기
+            if (_coinCount < _coinDrop)
+            {
+                _elapsedTime += UnityEngine.Time.deltaTime;
+                while (_elapsedTime >= _coinDropInterval)
+                {
+                    _elapsedTime -= _coinDropInterval;
+                    if (BlueRed.coinPool.Count > 0)
+                    {
+                        RewardCoin rewardCoin = BlueRed.coinPool.Dequeue();
+                        rewardCoin.Set(br);
+                        //rsp.PlayAudio(0, rsp.acCoinDrop);
+
+                        ++_coinCount;
+                    }
+
+                }
+            }
+            else if (BlueRed.coinPool.Count >= br.rewardCoins.Length)
+            {
+                br.ChangeState(br.stateReady);
+            }
         }
     }
 
