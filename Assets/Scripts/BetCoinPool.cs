@@ -37,6 +37,7 @@ public class BetCoinPool : MonoBehaviour
         _objActive.Push(item);
 
         item.transform.SetSiblingIndex(_objActive.Count - 1); //최종 오브젝트가 상단 레이어로 위치
+        item.transform.localScale = Vector3.one;
         return item;
     }
 

@@ -4,9 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
 using System;
+using System.Runtime.InteropServices;
 
 public class BlueRed : MonoBehaviour
 {
+    [DllImport("__Internal")]
+    public static extern void GoStore();
+
     //State Machine
     private BRState _currentState = null;
 
@@ -911,6 +915,7 @@ public class BlueRed : MonoBehaviour
                 break;
             case "FALSE":
                 //#004_Show_Me_The_Money
+                GoStore();
                 break;
         }
     }

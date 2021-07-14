@@ -402,7 +402,7 @@ public class BRStateReward : BRState
                     {
                         RewardCoin rewardCoin = BlueRed.coinPool.Dequeue();
                         rewardCoin.Set(br);
-                        //rsp.PlayAudio(0, rsp.acCoinDrop);
+                        br.PlayAudio(0, br.acBetCoin);
 
                         ++_coinCount;
                     }
