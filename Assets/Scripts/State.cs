@@ -94,6 +94,7 @@ public class BRStateInit : BRState
         var data = JsonUtility.FromJson<BlueredGameUserInfoPacket>(jsonData);
         var rsltSet = data.rslt_set;
         br.SetUserInfo(rsltSet.profile, rsltSet.nick, rsltSet.user_star_su);
+        //Debug.Log(jsonData);
     }
 }
 

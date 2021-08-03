@@ -130,6 +130,14 @@ public class BlueRed : MonoBehaviour
     public RewardCoin[] rewardCoins = new RewardCoin[20];
     public static Queue<RewardCoin> coinPool = new Queue<RewardCoin>();
 
+    [Header("메시지박스")]
+    //상점 이동용 메시지 박스
+    public GameObject messageBox;
+    public Button btnMbOk;
+    public Button btnMbCancel;
+    public Sprite sprNormalBtn;
+
+
     //Bet
     private int[] _betTable = new int[4] { 1, 10, 100, 500 }; //베팅 금액 (4개) 테이블. 값은 서버에서 내려 받음
     private int[] _betNums = new int[3]; //blue, green, red 각각의 베팅 금액
@@ -194,6 +202,7 @@ public class BlueRed : MonoBehaviour
 
         InitBetToggles();
         InitSoundToggle();
+        InitMessageBoxControls();
     }
 
     public void InitGame()
@@ -261,6 +270,29 @@ public class BlueRed : MonoBehaviour
         betToggles[1].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 1; PlayClickSound(); });
         betToggles[2].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 2; PlayClickSound(); });
         betToggles[3].onValueChanged.AddListener((bool on) => { if (!on) return; _betIndex = 3; PlayClickSound(); });
+    }
+    #endregion
+
+    #region msg_box
+    public void ShowStoreMessageBox()
+    {
+        messageBox.SetActive(true);
+        Image btnImg = btnMbOk.GetComponent<Image>();
+        btnImg.sprite = sprNormalBtn;
+        btnImg = btnMbCancel.GetComponent<Image>();
+        btnImg.sprite = sprNormalBtn;
+    }
+
+    public void CloseStoreMessageBox()
+    {
+        messageBox.SetActive(false);
+    }
+    public void InitMessageBoxControls()
+    {
+        btnMbOk.onClick.AddListener(() => { CloseStoreMessageBox(); GoStore(); });
+        btnMbCancel.onClick.AddListener(CloseStoreMessageBox);
+        //btnMbRetry.onClick.AddListener(CloseErrorMessageBox);
+
     }
     #endregion
 
@@ -387,6 +419,7 @@ public class BlueRed : MonoBehaviour
 
     public void OnClickBetBlueArea()
     {
+        Debug.Log("OnClickBetBlueArea");
         if (!IsInState(stateBetting))
             return;
         if (CheckBetCoin(SideType.Blue) == false)
@@ -531,7 +564,7 @@ public class BlueRed : MonoBehaviour
 
         ++_gameNum;
 
-        Debug.Log("Blue: " + _trendData[0].ToString() + ", Green: " + _trendData[1].ToString() + ", Red: " + _trendData[2].ToString());
+        //Debug.Log("Blue: " + _trendData[0].ToString() + ", Green: " + _trendData[1].ToString() + ", Red: " + _trendData[2].ToString());
         UpdateTrendDataText();
     }
 
@@ -768,18 +801,18 @@ public class BlueRed : MonoBehaviour
         {
             this.userNickName.text = _nickName;
         }
-        if(_remainCoin >= 0 && _remainCoin != remainCoin)
+        if(_remainCoin >= 0)
         {
             this.remainCoin = _remainCoin;
             //this.remainCoinText.text = this.remainCoin.ToString();
-            this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
+            this.remainCoinText.text = string.Format("{0:#,0}", this.remainCoin);
         }
     }
 
     public void ReduceRemainCoin(int _reduceValue)
     {
         this.remainCoin -= _reduceValue;
-        this.remainCoinText.text = string.Format("{0:#,###}", this.remainCoin);
+        this.remainCoinText.text = string.Format("{0:#,0}", this.remainCoin);
     }
 
     private int nIndexSetKeepBetting = 0;
@@ -898,6 +931,7 @@ public class BlueRed : MonoBehaviour
                 break;
             case "FALSE":
                 keepBetButton.interactable = false;
+                ShowStoreMessageBox();
                 //#004_Show_Me_The_Money
                 break;
         }
@@ -915,7 +949,8 @@ public class BlueRed : MonoBehaviour
                 break;
             case "FALSE":
                 //#004_Show_Me_The_Money
-                GoStore();
+                //GoStore();
+                ShowStoreMessageBox();
                 break;
         }
     }
@@ -924,7 +959,7 @@ public class BlueRed : MonoBehaviour
     {
         var data = JsonUtility.FromJson<RecvBlueredJoinProcPacket>(jsonData);
         var rslt_Set = data.rslt_set;
-        switch(rslt_Set.rtv)
+        switch (rslt_Set.rtv)
         {
             case "SUCC":
 
@@ -970,7 +1005,6 @@ public class BlueRed : MonoBehaviour
         if (kvPair.Length == 2 && kvPair[0] == "token")
         { //success
             _userToken = kvPair[1];
-            _userToken = "VWd3Mjl6dE5La0Jwc2JtR3QxdHVQdz09OjpiRU55a2cwVmZaanQ1WHc0";
         }
         else
         { //error: bad format
@@ -985,94 +1019,6 @@ public class BlueRed : MonoBehaviour
         userInfoTockenForm.szValue = value;
         return userInfoTockenForm;
     }
-
-    //아래는 참고용 예시 코드
-    /* 
-    
-
-    //유저 정보를 요청
-    public RecvUserInfoPacket userInfo;
-    public RecvUserBetSettingPacket bettingInfo;
-    public void RequestUserInfo()
-    {
-        loadingIndicator.SetActive(true);
-        StartCoroutine(RequestUserInfoImpl());
-    }
-
-    private IEnumerator RequestUserInfoImpl()
-    {
-        //유저 정보
-        WWWForm _form = new WWWForm();
-        _form.AddField("token", _userToken);
-        UnityWebRequest www = UnityWebRequest.Post("/game/game_user_info", _form);
-        //UnityWebRequest www = UnityWebRequest.Post("https://kpoplive.m.codewiz.kr/game/game_user_info", _form);
-        yield return www.SendWebRequest();
-
-        if (www.isNetworkError || www.isHttpError)
-        {
-            loadingIndicator.SetActive(false);
-            Debug.LogError(www.error);
-            ShowErrorMessageBox(www.error, RequestUserInfo);
-            yield break;
-        }
-        else
-        {
-            Debug.Log("profile url: " + userInfo.rslt_set.profile);
-            userInfo = JsonUtility.FromJson<RecvUserInfoPacket>(www.downloadHandler.text);
-
-            nicknameText.text = userInfo.rslt_set.nick;
-            cash = userInfo.rslt_set.user_star_su;
-            
-            UnityWebRequest wwwImage = UnityWebRequestTexture.GetTexture(userInfo.rslt_set.profile);
-            wwwImage.timeout = 2;
-            yield return wwwImage.SendWebRequest();
-
-            if (wwwImage.isNetworkError || wwwImage.isHttpError)
-            {
-                loadingIndicator.SetActive(false);
-                Debug.LogError(wwwImage.error);
-                ShowErrorMessageBox(wwwImage.error, RequestUserInfo);
-                yield break;
-            }
-            else
-            {
-                userImage.texture = ((DownloadHandlerTexture)wwwImage.downloadHandler).texture;
-            }
-            
-        }
-
-        //베팅 정보
-        _form = new WWWForm();
-        _form.AddField("token", _userToken);
-        www = UnityWebRequest.Post("/game/slot_batting_setting", _form);
-        //www = UnityWebRequest.Post("https://kpoplive.m.codewiz.kr/game/slot_batting_setting", _form);
-        www.timeout = 2;
-        yield return www.SendWebRequest();
-
-        if (www.isNetworkError || www.isHttpError)
-        {
-            loadingIndicator.SetActive(false);
-            Debug.LogError(www.error);
-            ShowErrorMessageBox(www.error, RequestUserInfo);
-            yield break;
-        }
-        else
-        {
-            bettingInfo = JsonUtility.FromJson<RecvUserBetSettingPacket>(www.downloadHandler.text);
-            if (bettingInfo.rslt_set.batting_sort.Count < betMultTbl.Length)
-            { //서버에서 날려주는 갯수가 더 적으면 안됨
-                Debug.LogError("Data Error!: Bet setting size");
-            }
-            else
-            {
-                SetBetNums(bettingInfo.rslt_set.batting_sort);
-                loadingIndicator.SetActive(false);
-            }
-            //Debug.Log(www.downloadHandler.text);
-        }
-    }
-
-     */
 }
 
 
