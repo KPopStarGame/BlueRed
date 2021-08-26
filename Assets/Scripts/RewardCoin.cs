@@ -61,7 +61,7 @@ public class RewardCoin : MonoBehaviour
 		_rectTransform.anchoredPosition3D = move;
 
 
-		if(Vector3.Distance(_rectTransform.position, _goalLocation) < 100f) //목표 지점의 일정 범위 내로 들어오면 도착으로 간주시킴.
+		if(Vector3.Distance(_rectTransform.position, _goalLocation) < 50f) //목표 지점의 일정 범위 내로 들어오면 도착으로 간주시킴.
         { //도착 => 코인의 소멸처리 => 동전 오브젝트의 재사용을 위해 pool에 다시 집어 넣음
 			BlueRed.coinPool.Enqueue(this);
 			gameObject.SetActive(false);

@@ -610,9 +610,9 @@ public class BlueRed : MonoBehaviour
 
     public void PlayAudio(int channel, AudioClip source, bool loop = false)
     {
-        audioSource[channel].clip = source;
-        audioSource[channel].loop = loop;
-        audioSource[channel].Play();
+        //audioSource[channel].clip = source;
+        //audioSource[channel].loop = loop;
+        audioSource[channel].PlayOneShot(source);
     }
 
     public void StopAudio(int channel)
