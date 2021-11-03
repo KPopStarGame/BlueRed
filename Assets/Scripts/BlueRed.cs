@@ -114,7 +114,7 @@ public class BlueRed : MonoBehaviour
 
     [Header("사운드")]
     public Toggle soundToggle;
-    public AudioSource[] audioSource;
+    public AudioSource audioSource;
     public AudioClip acButton;
     public AudioClip acBetCoin;
     public AudioClip acCount;
@@ -164,6 +164,9 @@ public class BlueRed : MonoBehaviour
 
     //ServerCoin
     private int[] coinCount = new int[4];
+
+    [HideInInspector]
+    public int lastUserStarNum;
 
 
     public float time
@@ -419,7 +422,6 @@ public class BlueRed : MonoBehaviour
 
     public void OnClickBetBlueArea()
     {
-        Debug.Log("OnClickBetBlueArea");
         if (!IsInState(stateBetting))
             return;
         if (CheckBetCoin(SideType.Blue) == false)
@@ -600,10 +602,7 @@ public class BlueRed : MonoBehaviour
         soundToggle.onValueChanged.AddListener(
             (bool on) =>
             {
-                for (int i = 0; i < audioSource.Length; i++)
-                {
-                    audioSource[i].mute = !on;
-                }
+                audioSource.mute = !on;
             }
             );
     }
@@ -612,12 +611,12 @@ public class BlueRed : MonoBehaviour
     {
         //audioSource[channel].clip = source;
         //audioSource[channel].loop = loop;
-        audioSource[channel].PlayOneShot(source);
+        audioSource.PlayOneShot(source);
     }
 
     public void StopAudio(int channel)
     {
-        audioSource[channel].Stop();
+        audioSource.Stop();
     }
 
     public void PlayClickSound()
@@ -813,6 +812,8 @@ public class BlueRed : MonoBehaviour
     {
         this.remainCoin -= _reduceValue;
         this.remainCoinText.text = string.Format("{0:#,0}", this.remainCoin);
+
+        lastUserStarNum -= _reduceValue;
     }
 
     private int nIndexSetKeepBetting = 0;
@@ -923,9 +924,9 @@ public class BlueRed : MonoBehaviour
                 {
                     for (int n = 0; n < _prevBet.betNums[i]; n++)
                     {
-                        m_listPrevKeepBetting.Add(i);
-                        StartCheckBetCoin(i);
-                        //BetCoin(_prevBet.type, true, i);
+                        //m_listPrevKeepBetting.Add(i);
+                        //StartCheckBetCoin(i);
+                        BetCoin(_prevBet.type, true, i);
                     }
                 }
                 break;

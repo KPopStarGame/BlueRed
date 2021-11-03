@@ -94,6 +94,7 @@ public class BRStateInit : BRState
         var data = JsonUtility.FromJson<BlueredGameUserInfoPacket>(jsonData);
         var rsltSet = data.rslt_set;
         br.SetUserInfo(rsltSet.profile, rsltSet.nick, rsltSet.user_star_su);
+        br.lastUserStarNum = rsltSet.user_star_su;
         //Debug.Log(jsonData);
     }
 }
@@ -115,6 +116,7 @@ public class BRStateReady : BRState
 
     public override void Enter(BlueRed br)
     {
+        br.SetUserInfo(null, null, br.lastUserStarNum);
         br.ResetGame();
         br.PopupNoticeStartBet();
         br.StartCorWebRequest(m_State, szPostAddress, listFormData, OnCallBack, true);
@@ -199,6 +201,8 @@ public class BRStateBetting : BRState
         TimeSpan diffTime = szEndDateTime - szNowDateTime;
         br.time = diffTime.Seconds;
         bool bChangeState = br.UpdateTimer();
+
+        //Debug.Log(bluered_room_info.play_result);
 
         string szNowPlayResult = bluered_room_info.play_result;
 
@@ -305,8 +309,9 @@ public class BRStateResult : BRState
 
         if(rslt_Set.last_user_star_su != null && rslt_Set.last_user_star_su != "")
         {
-            int lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
-            br.SetUserInfo(null, null, lastUserStarNum);
+            br.lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
+            //int lastUserStarNum = int.Parse(rslt_Set.last_user_star_su);
+            //br.SetUserInfo(null, null, lastUserStarNum);
         }
     }
 
